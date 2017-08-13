@@ -1,0 +1,73 @@
+package com.example.demo.myqueue;
+
+
+
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Created by ganymedex on 2017/8/13.
+ */
+@Component
+public class MyConcurrentLinkedQueue {
+
+
+
+    private  ConcurrentLinkedQueue<Integer> queue = new ConcurrentLinkedQueue<Integer>();
+    private final int count = 10; // 线程个数
+    //CountDownLatch，一个同步辅助类，在完成一组正在其他线程中执行的操作之前，它允许一个或多个线程一直等待。
+    private  CountDownLatch latch = new CountDownLatch(count);
+
+    public void testQueue() throws InterruptedException {
+        long timeStart = System.currentTimeMillis();
+        ExecutorService es = Executors.newFixedThreadPool(4);
+        this.offer();
+        for (int i = 0; i < count; i++) {
+            es.submit(new Poll());
+        }
+        latch.await(); //使得主线程(main)阻塞直到latch.countDown()为零才继续执行
+        System.out.println("cost time " + (System.currentTimeMillis() - timeStart) + "ms");
+        es.shutdown();
+
+    }
+
+
+
+    /**
+     * 生产
+     */
+    public  void offer() {
+//        for (int i = 0; i < 100000; i++) {
+//            queue.offer(i);
+//        }
+
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+       // List<Integer> integers = producer.buildListData();
+        for (int i = 0; i < 105; i++) {
+             int index = i;
+            singleThreadExecutor.execute(new Runnable() {
+                public void run() {
+                    System.out.println(index);
+                    queue.offer(index);
+                }
+                });
+            }
+}
+
+
+    /**
+     * 消费
+     */
+     class Poll implements Runnable {
+        public void run() {
+            while (!queue.isEmpty()) {
+                System.out.println("获取"+queue.poll());
+            }
+            latch.countDown();
+        }
+    }
+}
